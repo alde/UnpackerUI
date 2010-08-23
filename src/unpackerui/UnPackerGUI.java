@@ -47,16 +47,15 @@ public class UnPackerGUI extends javax.swing.JFrame {
         /** Creates new form UnPackerGUI */
         public UnPackerGUI() throws IOException, InterruptedException {
                 initComponents();
-                lc = new LoadConfig();
+                this.lc = new LoadConfig();
                 lc.doLoad();
+                this.dlm = new DefaultListModel();
                 this.sourcedir = lc.getSourceDir();
                 this.targetdir = lc.getTargetDir();
                 this.finisheddownloads = new ArrayList<String>();
                 this.brm = new DefaultBoundedRangeModel(0, 0, 0, 100);
-
                 jProgressBar1.setModel(brm);
                 jLabel1.setText(sourcedir + " >> " + targetdir);
-                dlm = new DefaultListModel();
                 jList1.setModel(dlm);
                 jProgressBar1.setStringPainted(true);
                 dlm.clear();
@@ -81,8 +80,6 @@ public class UnPackerGUI extends javax.swing.JFrame {
         }
 
         private void unpack(final List<String> finisheddownloads) throws IOException {
-
-
                 Runnable runnable = new UnpackingThread(finisheddownloads);
                 new Thread(runnable).start();
         }
@@ -95,8 +92,6 @@ public class UnPackerGUI extends javax.swing.JFrame {
                                 jProgressBar1.setValue(number);
                         }
                 });
-
-
         }
 
         private BufferedReader startCommand(String cmd) throws IOException {
