@@ -83,61 +83,16 @@ public class UnPackerGUI extends javax.swing.JFrame {
         private void unpack(final List<String> finisheddownloads) throws IOException {
 
 
-                Runnable runnable = new Runnable() {
-
-                        public void run() {
-                                for (final String current : finisheddownloads) {
-                                        String rartype = null;
-                                        try {
-                                                rartype = checkRarType(current);
-                                        } catch (IOException ex) {
-                                                Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
-                                        }
-                                        final String cmd = "unrar -y -r x " + sourcedir + current + "/" + rartype + " " + targetdir;
-                                        try {
-                                                BufferedReader br = startCommand(cmd);
-                                                String line;
-                                                int success = 0;
-                                                System.out.print(current + ": ");
-
-                                                while ((line = br.readLine()) != null) {
-                                                        System.out.println(line);
-                                                        if (line.contains("%")) {
-                                                                String regex = "\\d+\\%";
-                                                                Pattern myPattern = Pattern.compile(regex);
-                                                                Matcher myMatcher = myPattern.matcher(line);
-
-                                                                while (myMatcher.find()) {
-                                                                        num = Integer.parseInt(myMatcher.group().replace("%", ""));
-                                                                        updateProgress(num);
-                                                                        System.out.println("" + num);
-                                                                }
-                                                        } else if (line.contains("All OK")) {
-                                                                System.out.print("Done.");
-                                                                success = 1;
-                                                        } else if (line.contains("ERROR")) {
-                                                                System.out.println(line);
-                                                        }
-                                                }
-                                                if (success != 0) {
-                                                        deleteCurrent(current);
-                                                }
-                                        } catch (IOException ex) {
-                                                Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
-                                        }
-                                }
-                        }
-                };
+                Runnable runnable = new UnpackingThread(finisheddownloads);
                 new Thread(runnable).start();
         }
 
-        private void updateProgress(final int number) {
+        private void updateProgress(final int number, final String current) {
                 SwingUtilities.invokeLater(new Runnable() {
 
                         public void run() {
+                                jLabel2.setText(current);
                                 jProgressBar1.setValue(number);
-
-
                         }
                 });
 
@@ -150,42 +105,28 @@ public class UnPackerGUI extends javax.swing.JFrame {
                 InputStream is = process.getInputStream();
                 InputStreamReader isr = new InputStreamReader(is);
                 BufferedReader br = new BufferedReader(isr);
-
-
                 return br;
-
-
         }
 
         private String checkRarType(String current) throws IOException {
                 String cmd = "ls " + sourcedir + current + "/*.rar";
                 BufferedReader br = startCommand(cmd);
                 String line;
-
-
                 while ((line = br.readLine()) != null) {
                         if (line.contains(".part01.rar")) {
                                 return "*.part01.rar";
-
-
                         } else {
                                 return "*.rar";
-
-
                         }
                 }
                 return "*.rar";
-
-
         }
 
         private void deleteCurrent(String current) throws IOException {
                 String cmd = "rm " + sourcedir + current;
-//                Process process = new ProcessBuilder("bash", "-c", cmd).start();
+                Process process = new ProcessBuilder("bash", "-c", cmd).start();
                 System.out.println("\033[37m" + current + " deleted.");
                 dlm.removeElement(current);
-
-
         }
 
         /** This method is called from within the constructor to
@@ -203,6 +144,7 @@ public class UnPackerGUI extends javax.swing.JFrame {
                 jProgressBar1 = new javax.swing.JProgressBar();
                 jButton1 = new javax.swing.JButton();
                 jLabel1 = new javax.swing.JLabel();
+                jLabel2 = new javax.swing.JLabel();
 
                 setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -213,7 +155,7 @@ public class UnPackerGUI extends javax.swing.JFrame {
                 });
                 jScrollPane1.setViewportView(jList1);
 
-                jLabel3.setText("Files");
+                jLabel3.setText("Finished downloads");
 
                 jButton1.setText("Unpack");
                 jButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -222,11 +164,13 @@ public class UnPackerGUI extends javax.swing.JFrame {
                         }
                 });
 
+                jLabel2.setText(" ");
+
                 javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
                 getContentPane().setLayout(layout);
                 layout.setHorizontalGroup(
                         layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGroup(layout.createSequentialGroup()
                                 .addContainerGap()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
@@ -235,7 +179,8 @@ public class UnPackerGUI extends javax.swing.JFrame {
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 513, Short.MAX_VALUE)
                                                 .addComponent(jButton1))
                                         .addComponent(jLabel3)
-                                        .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE))
+                                        .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
+                                        .addComponent(jLabel2))
                                 .addContainerGap())
                 );
                 layout.setVerticalGroup(
@@ -247,9 +192,11 @@ public class UnPackerGUI extends javax.swing.JFrame {
                                         .addComponent(jLabel1))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabel3)
-                                .addGap(6, 6, 6)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 220, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 206, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(3, 3, 3)
+                                .addComponent(jLabel2)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 );
@@ -260,11 +207,6 @@ public class UnPackerGUI extends javax.swing.JFrame {
         private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
                 try {
                         unpack(finisheddownloads);
-                        updateProgress(
-                                num);
-
-
-
                 } catch (IOException ex) {
                         Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -273,9 +215,58 @@ public class UnPackerGUI extends javax.swing.JFrame {
         // Variables declaration - do not modify//GEN-BEGIN:variables
         private javax.swing.JButton jButton1;
         private javax.swing.JLabel jLabel1;
+        private javax.swing.JLabel jLabel2;
         private javax.swing.JLabel jLabel3;
         private javax.swing.JList jList1;
         private javax.swing.JProgressBar jProgressBar1;
         private javax.swing.JScrollPane jScrollPane1;
         // End of variables declaration//GEN-END:variables
+
+        private class UnpackingThread implements Runnable {
+
+                private final List<String> finisheddownloads;
+
+                public UnpackingThread(List<String> finisheddownloads) {
+                        this.finisheddownloads = finisheddownloads;
+                }
+
+                public void run() {
+                        for (final String current : finisheddownloads) {
+                                String rartype = null;
+                                try {
+                                        rartype = checkRarType(current);
+                                } catch (IOException ex) {
+                                        Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                                final String cmd = "unrar -y -r x " + sourcedir + current + "/" + rartype + " " + targetdir;
+                                try {
+                                        BufferedReader br = startCommand(cmd);
+                                        String line;
+                                        int success = 0;
+                                        System.out.print(current + ": ");
+                                        while ((line = br.readLine()) != null) {
+                                                if (line.contains("%")) {
+                                                        String regex = "\\d+\\%";
+                                                        Pattern myPattern = Pattern.compile(regex);
+                                                        Matcher myMatcher = myPattern.matcher(line);
+                                                        while (myMatcher.find()) {
+                                                                num = Integer.parseInt(myMatcher.group().replace("%", ""));
+                                                                updateProgress(num, current);
+                                                        }
+                                                } else if (line.contains("All OK")) {
+                                                        System.out.print("Done.");
+                                                        success = 1;
+                                                } else if (line.contains("ERROR")) {
+                                                        System.out.println(line);
+                                                }
+                                        }
+                                        if (success != 0) {
+                                                deleteCurrent(current);
+                                        }
+                                } catch (IOException ex) {
+                                        Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                        }
+                }
+        }
 }
