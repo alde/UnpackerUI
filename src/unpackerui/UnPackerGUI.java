@@ -81,34 +81,50 @@ public class UnPackerGUI extends javax.swing.JFrame {
         }
 
         private void unpack(List<String> finisheddownloads) throws IOException {
-                for (String current : finisheddownloads) {
+                for (final String current : finisheddownloads) {
                         String rartype = checkRarType(current);
-                        String cmd = "unrar -y -r x " + sourcedir + current + "/" + rartype + " " + targetdir;
-                        BufferedReader br = startCommand(cmd);
-                        String line;
-                        int success = 0;
-                        System.out.print(current + ": ");
-                        while ((line = br.readLine()) != null) {
-                                if (line.contains("%")) {
-                                        String regex = "\\d+";
-                                        Pattern myPattern = Pattern.compile(regex);
-                                        Matcher myMatcher = myPattern.matcher(line);
+                        final String cmd = "unrar -y -r x " + sourcedir + current + "/" + rartype + " " + targetdir;
 
-                                        while (myMatcher.find()) {
-                                                num = Integer.parseInt(myMatcher.group());
-                                                System.out.println("" + num);
+                        Runnable runnable = new Runnable() {
+
+                                public void run() {
+                                        try {
+                                                ProcessBuilder pb = new ProcessBuilder("bash", "-c", cmd).redirectErrorStream(true);
+                                                Process process = pb.start();
+                                                InputStream is = process.getInputStream();
+                                                InputStreamReader isr = new InputStreamReader(is);
+                                                BufferedReader br = new BufferedReader(isr);
+                                                String line;
+                                                int success = 0;
+                                                System.out.print(current + ": ");
+
+                                                while ((line = br.readLine()) != null) {
+                                                        if (line.contains("%")) {
+                                                                String regex = "\\d+";
+                                                                Pattern myPattern = Pattern.compile(regex);
+                                                                Matcher myMatcher = myPattern.matcher(line);
+
+                                                                while (myMatcher.find()) {
+                                                                        num = Integer.parseInt(myMatcher.group());
+                                                                        System.out.println("" + num);
+                                                                }
+                                                        } else if (line.contains("All OK")) {
+                                                                System.out.print("Done.");
+                                                                success = 1;
+                                                        } else if (line.contains("ERROR")) {
+                                                                System.out.println(line);
+                                                        }
+                                                }
+
+                                                if (success != 0) {
+                                                        //deleteCurrent(current);
+                                                }
+                                        } catch (IOException ex) {
+                                                Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
                                         }
-                                        updateProgress(num);
-                                } else if (line.contains("All OK")) {
-                                        System.out.print("Done.");
-                                        success = 1;
-                                } else if (line.contains("ERROR")) {
-                                        System.out.println(line);
                                 }
-                        }
-                        if (success != 0) {
-                                //deleteCurrent(current);
-                        }
+                        };
+                        runnable.run();
                 }
         }
 
@@ -222,9 +238,11 @@ public class UnPackerGUI extends javax.swing.JFrame {
         private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
                 try {
                         unpack(finisheddownloads);
+                        updateProgress(num);
                 } catch (IOException ex) {
                         Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
+
         }//GEN-LAST:event_jButton1ActionPerformed
         // Variables declaration - do not modify//GEN-BEGIN:variables
         private javax.swing.JButton jButton1;

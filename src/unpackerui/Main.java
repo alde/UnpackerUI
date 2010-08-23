@@ -19,21 +19,14 @@ public class Main {
          * @param args the command line arguments
          */
         public static void main(String[] args) throws IOException, InterruptedException {
-                SwingUtilities.invokeLater(new Runnable() {
-
-                        public void run() {
-                                UnPackerGUI upUI;
-                                try {
-                                        upUI = new UnPackerGUI();
-                                        upUI.setVisible(true);
-                                } catch (IOException ex) {
-                                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                                } catch (InterruptedException ex) {
-                                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                        }
-                });
-
-
+                UnPackerGUI upUI;
+                try {
+                        upUI = new UnPackerGUI();
+                        upUI.setVisible(true);
+                } catch (IOException ex) {
+                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (InterruptedException ex) {
+                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+                }
         }
 }
