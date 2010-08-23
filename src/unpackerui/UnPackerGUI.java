@@ -94,6 +94,24 @@ public class UnPackerGUI extends javax.swing.JFrame {
                 });
         }
 
+        private void setErrorMessage(final String line) {
+                SwingUtilities.invokeLater(new Runnable() {
+
+                        public void run() {
+                                jLabel2.setText(line);
+                        }
+                });
+        }
+
+        private void setDoneMessage(final String line) {
+                SwingUtilities.invokeLater(new Runnable() {
+
+                        public void run() {
+                                jLabel2.setText(line);
+                        }
+                });
+        }
+
         private BufferedReader startCommand(String cmd) throws IOException {
                 ProcessBuilder pb = new ProcessBuilder("bash", "-c", cmd).redirectErrorStream(true);
                 Process process = pb.start();
@@ -238,21 +256,14 @@ public class UnPackerGUI extends javax.swing.JFrame {
                                         BufferedReader br = startCommand(cmd);
                                         String line;
                                         int success = 0;
-                                        System.out.print(current + ": ");
                                         while ((line = br.readLine()) != null) {
                                                 if (line.contains("%")) {
-                                                        String regex = "\\d+\\%";
-                                                        Pattern myPattern = Pattern.compile(regex);
-                                                        Matcher myMatcher = myPattern.matcher(line);
-                                                        while (myMatcher.find()) {
-                                                                num = Integer.parseInt(myMatcher.group().replace("%", ""));
-                                                                updateProgress(num, current);
-                                                        }
+                                                        regExpPercentage(line, current);
                                                 } else if (line.contains("All OK")) {
-                                                        System.out.print("Done.");
+                                                        setDoneMessage(current+" Done.");
                                                         success = 1;
                                                 } else if (line.contains("ERROR")) {
-                                                        System.out.println(line);
+                                                        setErrorMessage(line);
                                                 }
                                         }
                                         if (success != 0) {
@@ -261,6 +272,16 @@ public class UnPackerGUI extends javax.swing.JFrame {
                                 } catch (IOException ex) {
                                         Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
                                 }
+                        }
+                }
+
+                private void regExpPercentage(String line, final String current) throws NumberFormatException {
+                        String regex = "\\d+\\%";
+                        Pattern myPattern = Pattern.compile(regex);
+                        Matcher myMatcher = myPattern.matcher(line);
+                        while (myMatcher.find()) {
+                                num = Integer.parseInt(myMatcher.group().replace("%", ""));
+                                updateProgress(num, current);
                         }
                 }
         }
