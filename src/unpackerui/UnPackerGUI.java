@@ -80,32 +80,36 @@ public class UnPackerGUI extends javax.swing.JFrame {
                 }
         }
 
-        private void unpack(List<String> finisheddownloads) throws IOException {
-                for (final String current : finisheddownloads) {
-                        String rartype = checkRarType(current);
-                        final String cmd = "unrar -y -r x " + sourcedir + current + "/" + rartype + " " + targetdir;
+        private void unpack(final List<String> finisheddownloads) throws IOException {
 
-                        Runnable runnable = new Runnable() {
 
-                                public void run() {
+                Runnable runnable = new Runnable() {
+
+                        public void run() {
+                                for (final String current : finisheddownloads) {
+                                        String rartype = null;
                                         try {
-                                                ProcessBuilder pb = new ProcessBuilder("bash", "-c", cmd).redirectErrorStream(true);
-                                                Process process = pb.start();
-                                                InputStream is = process.getInputStream();
-                                                InputStreamReader isr = new InputStreamReader(is);
-                                                BufferedReader br = new BufferedReader(isr);
+                                                rartype = checkRarType(current);
+                                        } catch (IOException ex) {
+                                                Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                        final String cmd = "unrar -y -r x " + sourcedir + current + "/" + rartype + " " + targetdir;
+                                        try {
+                                                BufferedReader br = startCommand(cmd);
                                                 String line;
                                                 int success = 0;
                                                 System.out.print(current + ": ");
 
                                                 while ((line = br.readLine()) != null) {
+                                                        System.out.println(line);
                                                         if (line.contains("%")) {
-                                                                String regex = "\\d+";
+                                                                String regex = "\\d+\\%";
                                                                 Pattern myPattern = Pattern.compile(regex);
                                                                 Matcher myMatcher = myPattern.matcher(line);
 
                                                                 while (myMatcher.find()) {
-                                                                        num = Integer.parseInt(myMatcher.group());
+                                                                        num = Integer.parseInt(myMatcher.group().replace("%", ""));
+                                                                        updateProgress(num);
                                                                         System.out.println("" + num);
                                                                 }
                                                         } else if (line.contains("All OK")) {
@@ -115,17 +119,16 @@ public class UnPackerGUI extends javax.swing.JFrame {
                                                                 System.out.println(line);
                                                         }
                                                 }
-
                                                 if (success != 0) {
-                                                        //deleteCurrent(current);
+                                                        deleteCurrent(current);
                                                 }
                                         } catch (IOException ex) {
                                                 Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
                                         }
                                 }
-                        };
-                        runnable.run();
-                }
+                        }
+                };
+                new Thread(runnable).start();
         }
 
         private void updateProgress(final int number) {
@@ -133,8 +136,12 @@ public class UnPackerGUI extends javax.swing.JFrame {
 
                         public void run() {
                                 jProgressBar1.setValue(number);
+
+
                         }
                 });
+
+
         }
 
         private BufferedReader startCommand(String cmd) throws IOException {
@@ -143,27 +150,42 @@ public class UnPackerGUI extends javax.swing.JFrame {
                 InputStream is = process.getInputStream();
                 InputStreamReader isr = new InputStreamReader(is);
                 BufferedReader br = new BufferedReader(isr);
+
+
                 return br;
+
+
         }
 
         private String checkRarType(String current) throws IOException {
                 String cmd = "ls " + sourcedir + current + "/*.rar";
                 BufferedReader br = startCommand(cmd);
                 String line;
+
+
                 while ((line = br.readLine()) != null) {
                         if (line.contains(".part01.rar")) {
                                 return "*.part01.rar";
+
+
                         } else {
                                 return "*.rar";
+
+
                         }
                 }
                 return "*.rar";
+
+
         }
 
         private void deleteCurrent(String current) throws IOException {
                 String cmd = "rm " + sourcedir + current;
-                Process process = new ProcessBuilder("bash", "-c", cmd).start();
+//                Process process = new ProcessBuilder("bash", "-c", cmd).start();
                 System.out.println("\033[37m" + current + " deleted.");
+                dlm.removeElement(current);
+
+
         }
 
         /** This method is called from within the constructor to
@@ -238,7 +260,11 @@ public class UnPackerGUI extends javax.swing.JFrame {
         private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
                 try {
                         unpack(finisheddownloads);
-                        updateProgress(num);
+                        updateProgress(
+                                num);
+
+
+
                 } catch (IOException ex) {
                         Logger.getLogger(UnPackerGUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
